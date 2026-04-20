@@ -1,7 +1,7 @@
 {
   "name": "Kroetz Fix-It",
   "short_name": "Fix-It",
-  "start_url": "/kroetz-fix-it-app/",
+  "start_url": "/kroetz-fix-it-app/index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
