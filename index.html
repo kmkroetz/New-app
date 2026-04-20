@@ -4,13 +4,20 @@
   <title>Kroetz Fix-It</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   
-  <!-- FIXED path (lowercase) -->
-  <link rel="manifest" href="/kroetz-fix-it-app/manifest.json">
-  <meta name="theme-color" content="#000000">
+  <link rel="manifest" href="/Kroetz-fix-it-app/manifest.json">
 
-  <!-- FIXED: wrap CSS -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/kroetz-fix-it-app/service-worker.js');
+    }
+  </script>
+
   <style>
-    body { font-family: Arial; padding: 20px; background:#f4f4f4; }
+    body { 
+      font-family: Arial; 
+      padding: 20px; 
+      background:#f4f4f4; 
+    }
     h1 { text-align:center; }
     .card {
       background:white;
@@ -30,6 +37,11 @@
       background:black;
       color:white;
       font-weight:bold;
+      cursor:pointer;
+    }
+    .delete {
+      background:red;
+      margin-top:10px;
     }
   </style>
 </head>
@@ -53,15 +65,32 @@
 
 <script>
 function saveQuote() {
-  let name = document.getElementById("name").value;
-  let job = document.getElementById("job").value;
-  let price = document.getElementById("price").value;
+  let name = document.getElementById("name").value.trim();
+  let job = document.getElementById("job").value.trim();
+  let price = document.getElementById("price").value.trim();
+
+  if (!name || !job || !price) {
+    alert("Please fill out all fields");
+    return;
+  }
 
   let quote = {name, job, price};
   let quotes = JSON.parse(localStorage.getItem("quotes")) || [];
+
   quotes.push(quote);
   localStorage.setItem("quotes", JSON.stringify(quotes));
 
+  document.getElementById("name").value = "";
+  document.getElementById("job").value = "";
+  document.getElementById("price").value = "";
+
+  displayQuotes();
+}
+
+function deleteQuote(index) {
+  let quotes = JSON.parse(localStorage.getItem("quotes")) || [];
+  quotes.splice(index, 1);
+  localStorage.setItem("quotes", JSON.stringify(quotes));
   displayQuotes();
 }
 
@@ -70,26 +99,8 @@ function displayQuotes() {
   let container = document.getElementById("quotes");
   container.innerHTML = "";
 
-  quotes.forEach(q => {
+  quotes.forEach((q, index) => {
     container.innerHTML += `
       <div class="card">
         <b>${q.name}</b><br>
-        ${q.job}<br>
-        $${q.price}
-      </div>
-    `;
-  });
-}
-
-displayQuotes();
-</script>
-
-<!-- MOVE service worker here -->
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/kroetz-fix-it-app/service-worker.js');
-}
-</script>
-
-</body>
-</html>
+        ${
