@@ -1,12 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Kroetz Fix-It</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="manifest" href="./manifest.json">
+
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f4f4f4; }
+    h1 { text-align: center; }
+
+    .card {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0 10px 0;
+    }
+
+    button {
+      padding: 10px;
+      margin: 5px 5px 5px 0;
+      border: none;
+      border-radius: 5px;
+      background: #333;
+      color: white;
+    }
+
+    .item {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 5px;
+    }
+
+    .item input { flex: 1; }
+
+    .screen {
+      display: none;
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Kroetz Fix-It</h1>
+
+<!-- MAIN FORM -->
+<div class="card">
+  <label>Customer Name</label>
+  <input type="text" id="customer">
+
+  <label>Description</label>
+  <textarea id="description"></textarea>
+
+  <h3>Items</h3>
+  <div id="items"></div>
+  <button onclick="addItem()">+ Add Item</button>
+
+  <h3>Total: $<span id="total">0.00</span></h3>
+
+  <button onclick="generateQuote()">Generate Quote</button>
+  <button onclick="saveQuote()">Save Quote</button>
+  <button onclick="convertToJob()">Convert to Job</button>
+  <button onclick="viewQuotes()">View Quotes</button>
+  <button onclick="viewJobs()">View Jobs</button>
+</div>
+
+<!-- QUOTE PREVIEW -->
+<div class="card">
+  <h3>Quote Preview</h3>
+  <div id="quoteOutput">No quote yet</div>
+</div>
+
+<!-- QUOTES SCREEN -->
+<div id="quotesScreen" class="screen">
+  <h2>Saved Quotes</h2>
+  <div id="quotesList"></div>
+  <button onclick="closeQuotes()">Back</button>
+</div>
+
+<!-- JOBS SCREEN -->
+<div id="jobsScreen" class="screen">
+  <h2>Jobs</h2>
+  <div id="jobsList"></div>
+  <button onclick="closeJobs()">Back</button>
+</div>
+
 <script>
+// SERVICE WORKER
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./service-worker.js');
 }
 
 // ITEM SYSTEM
 function addItem(name = "", price = 0) {
-  const container = document.getElementById("items");
-
   const div = document.createElement("div");
   div.className = "item";
 
@@ -15,7 +110,7 @@ function addItem(name = "", price = 0) {
     '<input type="number" placeholder="Price" value="' + price + '" class="item-price" oninput="calculateTotal()">' +
     '<button onclick="this.parentElement.remove(); calculateTotal()">X</button>';
 
-  container.appendChild(div);
+  document.getElementById("items").appendChild(div);
 }
 
 function calculateTotal() {
@@ -32,23 +127,25 @@ function getItems() {
   const items = [];
 
   document.querySelectorAll(".item").forEach(div => {
-    const name = div.querySelector(".item-name").value;
-    const price = div.querySelector(".item-price").value;
-    items.push({ name, price });
+    items.push({
+      name: div.querySelector(".item-name").value,
+      price: div.querySelector(".item-price").value
+    });
   });
 
   return items;
 }
 
-// QUOTES
+// QUOTES STORAGE
 function getQuotes() {
   return JSON.parse(localStorage.getItem("quotes") || "[]");
 }
 
-function saveQuotes(quotes) {
-  localStorage.setItem("quotes", JSON.stringify(quotes));
+function saveQuotes(data) {
+  localStorage.setItem("quotes", JSON.stringify(data));
 }
 
+// SAVE QUOTE
 function saveQuote() {
   const customer = document.getElementById("customer").value;
   const description = document.getElementById("description").value;
@@ -75,13 +172,14 @@ function saveQuote() {
   alert("Quote saved!");
 }
 
+// VIEW QUOTES
 function viewQuotes() {
-  const screen = document.getElementById("quotesScreen");
-  const container = document.getElementById("quotesList");
-
-  screen.style.display = "block";
+  document.getElementById("quotesScreen").style.display = "block";
+  document.getElementById("jobsScreen").style.display = "none";
 
   const quotes = getQuotes();
+  const container = document.getElementById("quotesList");
+
   container.innerHTML = "";
 
   if (quotes.length === 0) {
@@ -92,13 +190,13 @@ function viewQuotes() {
   quotes.forEach(q => {
     let html = "<div style='border:1px solid #ccc; padding:10px; margin:10px 0;'>";
     html += "<strong>" + q.customer + "</strong><br>";
-    html += q.description + "<br><ul>";
+    html += q.description + "<ul>";
 
     q.items.forEach(i => {
       html += "<li>" + i.name + " - $" + i.price + "</li>";
     });
 
-    html += "</ul>Total: $" + q.total + "</div>";
+    html += "</ul><strong>Total: $" + q.total + "</strong></div>";
 
     container.innerHTML += html;
   });
@@ -108,15 +206,16 @@ function closeQuotes() {
   document.getElementById("quotesScreen").style.display = "none";
 }
 
-// JOBS
+// JOBS STORAGE
 function getJobs() {
   return JSON.parse(localStorage.getItem("jobs") || "[]");
 }
 
-function saveJobs(jobs) {
-  localStorage.setItem("jobs", JSON.stringify(jobs));
+function saveJobs(data) {
+  localStorage.setItem("jobs", JSON.stringify(data));
 }
 
+// CONVERT TO JOB
 function convertToJob() {
   const customer = document.getElementById("customer").value;
   const description = document.getElementById("description").value;
@@ -143,13 +242,14 @@ function convertToJob() {
   alert("Job created!");
 }
 
+// VIEW JOBS
 function viewJobs() {
-  const screen = document.getElementById("jobsScreen");
-  const container = document.getElementById("jobsList");
-
-  screen.style.display = "block";
+  document.getElementById("jobsScreen").style.display = "block";
+  document.getElementById("quotesScreen").style.display = "none";
 
   const jobs = getJobs();
+  const container = document.getElementById("jobsList");
+
   container.innerHTML = "";
 
   if (jobs.length === 0) {
@@ -160,13 +260,13 @@ function viewJobs() {
   jobs.forEach(j => {
     let html = "<div style='border:1px solid #ccc; padding:10px; margin:10px 0;'>";
     html += "<strong>" + j.customer + "</strong><br>";
-    html += j.description + "<br><ul>";
+    html += j.description + "<ul>";
 
     j.items.forEach(i => {
       html += "<li>" + i.name + " - $" + i.price + "</li>";
     });
 
-    html += "</ul>Total: $" + j.total + "</div>";
+    html += "</ul><strong>Total: $" + j.total + "</strong></div>";
 
     container.innerHTML += html;
   });
@@ -199,3 +299,6 @@ window.onload = function() {
   addItem();
 };
 </script>
+
+</body>
+</html>
