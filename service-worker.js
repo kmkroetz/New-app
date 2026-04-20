@@ -1,3 +1,4 @@
+alert("JS LOADED");
 const CACHE_NAME = "kroetz-fixit-v7";
 
 const FILES_TO_CACHE = [
